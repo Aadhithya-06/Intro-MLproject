@@ -235,7 +235,7 @@ def k_fold_evaluation(data, nr_of_folds=10, shuffle=True):
 def eval_summary(average_accuracy, average_recall, average_precision, average_f1,
                  average_confusion_matrix):
     print('The averages of the evaluation metrics are as follows:')
-    print("\nconfusion matrix: {}".format(average_confusion_matrix))
+    print("\nconfusion matrix:\n {}".format(average_confusion_matrix))
     print("\naccuracy: {}".format(average_accuracy))
     print("\nprecision: {}".format(average_precision))
     print("\nrecall: {}".format(average_recall))

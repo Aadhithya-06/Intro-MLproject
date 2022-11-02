@@ -2,6 +2,8 @@ from copy import deepcopy
 from evaluation import *
 import numpy as np
 
+np.set_printoptions(suppress=True)
+
 
 def tree_depth(tree):
     if 'label' in tree:
@@ -77,11 +79,13 @@ def k_fold_pruning(data, nr_of_folds=10):
     all_folds_average_precision = []
     all_folds_average_f1 = []
     all_folds_average_accuracies = []
+    all_folds_average_confusion = []
 
     pruned_all_folds_average_recall = []
     pruned_all_folds_average_precision = []
     pruned_all_folds_average_f1 = []
-    pruned_all_folds_average_classification = []
+    pruned_all_folds_average_accuracies = []
+    pruned_all_folds_average_confusion = []
     pruned_trees = []
 
     # shuffle data to avoid it being ordered by label
@@ -127,7 +131,9 @@ def k_fold_pruning(data, nr_of_folds=10):
                                          get_predictions(evaluation_data_set, original_tree))
             acc = accuracy(confusion)
             print("Tree depth:", tree_depth(original_tree))
+
             print('The accuracy for the trained tree: {}'.format(acc))
+
             # keep a copy of the un-pruned tree
             current_tree = deepcopy(original_tree)
             # prune
@@ -158,6 +164,7 @@ def k_fold_pruning(data, nr_of_folds=10):
             pruned_acc = accuracy(pruned_confusion_matrix)
 
             print("Pruned tree depth:", tree_depth(current_tree))
+
             print('The accuracy for the best pruned tree: {}'
                   .format(pruned_acc))
             print('TESTING TREES ON TEST DATA SET...')
@@ -165,16 +172,19 @@ def k_fold_pruning(data, nr_of_folds=10):
             # evaluate un-pruned and best pruned tree on test dataset
             confusion = confusion_matrix(get_ground_truths(test_data_set),
                                          get_predictions(test_data_set, original_tree))
+
             acc = accuracy(confusion)
             prec = precision(confusion)
             rec = recall(confusion)
             f1 = f1_score(confusion)
+            confusion = np.reshape(confusion, (1, 4, 4))
             pruned_confusion_matrix = confusion_matrix(get_ground_truths(test_data_set),
                                                        get_predictions(test_data_set, current_tree))
             pruned_precision = precision(pruned_confusion_matrix)
             pruned_recall = recall(pruned_confusion_matrix)
             pruned_f1 = f1_score(pruned_confusion_matrix)
             pruned_acc = accuracy(pruned_confusion_matrix)
+            pruned_confusion_matrix = np.reshape(pruned_confusion_matrix, (1, 4, 4))
 
             print('The test accuracy for the original tree: {}'
                   .format(acc))
@@ -211,22 +221,25 @@ def k_fold_pruning(data, nr_of_folds=10):
                 pruned_f1_matrix = np.vstack((pruned_f1_matrix, pruned_f1))
                 pruned_confusion_tensor = np.vstack((pruned_confusion_tensor, pruned_confusion_matrix))
 
-            print('-' * 70)
-
         # calculate average of evaluation measures
         average_recall = np.mean(recall_matrix, axis=0)
         average_precision = np.mean(precision_matrix, axis=0)
         average_f1 = np.mean(f1_matrix, axis=0)
+        average_confusion = np.mean(confusion_tensor, axis=0)
         average_accuracies = np.mean(accuracies)
+        average_confusion = np.reshape(average_confusion, (1, 4, 4))
 
         pruned_average_recall = np.mean(pruned_recall_matrix, axis=0)
         pruned_average_precision = np.mean(pruned_precision_matrix, axis=0)
         pruned_average_f1 = np.mean(pruned_f1_matrix, axis=0)
         pruned_average_accuracies = np.mean(pruned_accuracies)
+        pruned_average_confusion = np.mean(pruned_confusion_tensor, axis=0)
+
+        pruned_average_confusion = np.reshape(pruned_average_confusion, (1, 4, 4))
 
         # store average measures across all folds
         all_folds_average_accuracies.append(average_accuracies)
-        pruned_all_folds_average_classification.append(pruned_average_accuracies)
+        pruned_all_folds_average_accuracies.append(pruned_average_accuracies)
 
         # stack all label-wise measures as arrays(each fold is a row)
         # averages for each label are then the array columns averages(axis 0)
@@ -234,49 +247,59 @@ def k_fold_pruning(data, nr_of_folds=10):
             all_folds_average_recall = average_recall
             all_folds_average_precision = average_precision
             all_folds_average_f1 = average_f1
+            all_folds_average_confusion = average_confusion
 
             pruned_all_folds_average_recall = pruned_average_recall
             pruned_all_folds_average_precision = pruned_average_precision
             pruned_all_folds_average_f1 = pruned_average_f1
+            pruned_all_folds_average_confusion = pruned_average_confusion
         else:
             all_folds_average_recall = np.vstack((all_folds_average_recall, average_recall))
             all_folds_average_precision = np.vstack((all_folds_average_precision, average_precision))
             all_folds_average_f1 = np.vstack((all_folds_average_f1, average_f1))
+            all_folds_average_confusion = np.vstack((all_folds_average_confusion, average_confusion))
 
             pruned_all_folds_average_recall = np.vstack((pruned_all_folds_average_recall, pruned_average_recall))
             pruned_all_folds_average_precision = np.vstack((pruned_all_folds_average_precision,
                                                             pruned_average_precision))
             pruned_all_folds_average_f1 = np.vstack((pruned_all_folds_average_f1, pruned_average_f1))
+            pruned_all_folds_average_confusion = np.vstack(
+                (pruned_all_folds_average_confusion, pruned_average_confusion))
 
     # calculate average of evaluation measures across all folds
     average_recall = np.mean(all_folds_average_recall, axis=0)
     average_precision = np.mean(all_folds_average_precision, axis=0)
     average_f1 = np.mean(all_folds_average_f1, axis=0)
     average_accuracies = np.mean(all_folds_average_accuracies)
+    average_confusion = np.mean(all_folds_average_confusion, axis=0)
 
     pruned_average_recall = np.mean(pruned_all_folds_average_recall, axis=0)
     pruned_average_precision = np.mean(pruned_all_folds_average_precision, axis=0)
     pruned_average_f1 = np.mean(pruned_all_folds_average_f1, axis=0)
-    pruned_average_accuracies = np.mean(pruned_all_folds_average_classification)
+    pruned_average_accuracies = np.mean(pruned_all_folds_average_accuracies)
+    pruned_average_confusion = np.mean(pruned_all_folds_average_confusion, axis=0)
 
     eval_measures = [average_accuracies, average_recall, average_precision, average_f1]
     pruned_eval_measures = [pruned_average_accuracies, pruned_average_recall, pruned_average_precision,
                             pruned_average_f1]
     improvement = pruned_average_accuracies - average_accuracies
 
+    print('Average confusion matrix for un-pruned trees:\n {}'.format(np.round(average_confusion, 3)))
     print('Average accuracy for un-pruned trees: {}'.format(average_accuracies))
     print('Average accuracy for pruned trees: {}'.format(pruned_average_accuracies))
-    print('Pruning improved the average test score by {}%' .format(improvement * 100))
+    print('Pruning improved the average test score by {}%'.format(improvement * 100))
     print('Average recall for un-pruned trees: {}'
           .format(average_recall))
     print('Average precision for un-pruned trees: {}'
           .format(average_precision))
     print('Average F1 score for un-pruned trees: {}'
           .format(average_f1, 3))
+    print('Average confusion matrix for pruned trees:\n {}'.format(np.round(pruned_average_confusion, 3)))
     print('Average recall for pruned trees: {}'
           .format(pruned_average_recall))
     print('Average precision for pruned trees: {}'
           .format(pruned_average_precision))
     print('Average F1 score for pruned trees: {}'
           .format(pruned_average_f1))
+
     return eval_measures, pruned_eval_measures
