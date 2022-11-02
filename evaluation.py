@@ -226,8 +226,8 @@ def k_fold_evaluation(data, nr_of_folds=10, shuffle=True):
     average_confusion_matrix = np.mean(confusion_tensor, axis=0)
 
     return (average_accuracy,
-            average_recall,
             average_precision,
+            average_recall,
             average_f1,
             average_confusion_matrix)
 
