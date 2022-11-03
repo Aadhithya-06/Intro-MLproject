@@ -30,7 +30,7 @@ This will first run the 10-fold cross-validation on both clean and noisy dataset
 Move the file containing the data you want the algorithm to be run on and then run,
 
 ```
-python3 step3.py <filename> or python step3.py <filename>
+python3 step3.py <filename>
 ```
 where filename is the .txt file with your data
 
@@ -39,6 +39,6 @@ where filename is the .txt file with your data
 Move the file containing the data to the extracted folder. Then run
 
 ```
-python3 step4.py <filename> or python step4.py <filename>
+python3 step4.py <filename>
 ```
 where filename is the .txt file with your data
